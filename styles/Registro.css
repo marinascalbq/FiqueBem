@@ -1,0 +1,121 @@
+/* Reset padrão */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Corpo */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f8f8f8; /* Fundo suave */
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* Container principal */
+.cadastro-container {
+  display: flex;
+  justify-content: center; /* Centraliza os blocos horizontalmente */
+  align-items: center; /* Alinha os blocos verticalmente */
+  flex-wrap: wrap; /* Permite que os elementos quebrem linha em telas menores */
+  gap: 40px; /* Espaçamento entre os blocos */
+  width: 90%;
+  max-width: 1500px;
+}
+
+/* Estilização dos blocos */
+.paciente-box,
+.terapeuta-box {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 350px; /* Define um tamanho fixo para os blocos */
+  text-align: center;
+}
+
+/* Cabeçalho */
+.cadastro-header {
+  background-color: #9c4e97;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.cadastro-header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+/* Ajuste no textarea */
+textarea {
+  resize: none;
+  height: 80px;
+}
+
+/* Placeholder */
+input::placeholder,
+textarea::placeholder {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+/* Botões */
+input[type="submit"],
+.cadastrar-terapeuta-btn {
+  background-color: #9c4e97;
+  color: white;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover,
+.cadastrar-terapeuta-btn:hover {
+  background-color: #7d3b78;
+}
+
+/* Ajustando espaçamento do botão de terapeuta */
+.terapeuta-box p {
+  margin-bottom: 20px; /* Maior espaçamento antes do botão */
+}
+
+/* Ajuste para telas menores */
+@media (max-width: 768px) {
+  .cadastro-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .paciente-box,
+  .terapeuta-box {
+    width: 90%;
+  }
+}
