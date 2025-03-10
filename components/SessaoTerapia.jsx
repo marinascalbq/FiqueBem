@@ -13,15 +13,13 @@ const SessaoTerapia = () => {
   const [therapists, setTherapists] = useState([]);
   const [sessoesMarcadas, setSessoesMarcadas] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Simulação de usuário logado (deve ser substituído pelo usuário autenticado)
-  const pacienteNome = localStorage.getItem("pacienteNome") || "Paciente Anônimo";
+
+  const usuarioLogado = localStorage.getItem("userEmail") || "paciente@email.com";  
 
   useEffect(() => {
     fetchTherapists();
   }, []);
 
-  // Buscar lista de terapeutas
   const fetchTherapists = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "therapists"));
@@ -32,96 +30,62 @@ const SessaoTerapia = () => {
       setTherapists(therapistsList);
     } catch (error) {
       console.error("Erro ao buscar terapeutas:", error);
-      setMensagem("⚠️ Erro ao carregar a lista de terapeutas.");
+      setMensagem("Erro ao carregar a lista de terapeutas.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Buscar nome do terapeuta a partir do ID salvo na sessão
-  const fetchNomeTerapeuta = async (terapeutaId) => {
+  const fetchDetalhesTerapeuta = async (terapeutaId) => {
     try {
       const terapeutaRef = doc(db, "therapists", terapeutaId);
       const terapeutaDoc = await getDoc(terapeutaRef);
 
       if (terapeutaDoc.exists()) {
-        return terapeutaDoc.data().nome;
+        return terapeutaDoc.data();
       } else {
-        return "Terapeuta não encontrado";
+        return null;
       }
     } catch (error) {
-      console.error("Erro ao buscar nome do terapeuta:", error);
-      return "Erro ao carregar terapeuta";
+      console.error("Erro ao buscar detalhes do terapeuta:", error);
+      return null;
     }
   };
 
-  // Verifica se o terapeuta está disponível no horário escolhido
   const verificarDisponibilidadeTerapeuta = async () => {
     try {
-      const terapeutaRef = doc(db, "therapists", terapeuta);
-      const terapeutaDoc = await getDoc(terapeutaRef);
-
-      if (terapeutaDoc.exists()) {
-        const { dataInicio, dataFim, horarioInicio, horarioFim } = terapeutaDoc.data();
-
-        const dataSelecionada = new Date(dataSessao);
-        const dataInicioDisp = new Date(dataInicio);
-        const dataFimDisp = new Date(dataFim);
-
-        if (dataSelecionada < dataInicioDisp || dataSelecionada > dataFimDisp) {
-          return false; // Fora do período de disponibilidade
-        }
-
-        if (horario < horarioInicio || horario > horarioFim) {
-          return false; // Fora do horário de atendimento
-        }
-
-        return true;
-      } else {
-        return false; // Terapeuta não encontrado
+      const terapeutaDetalhes = await fetchDetalhesTerapeuta(terapeuta);
+      if (!terapeutaDetalhes) {
+        setMensagem("Terapeuta não encontrado.");
+        return false;
       }
+
+      const { dataInicio, dataFim, horarioInicio, horarioFim } = terapeutaDetalhes;
+
+      if (dataSessao < dataInicio || dataSessao > dataFim) {
+        setMensagem("O terapeuta não está disponível nesta data.");
+        return false;
+      }
+
+      if (horario < horarioInicio || horario > horarioFim) {
+        setMensagem("O terapeuta não atende neste horário.");
+        return false;
+      }
+
+      return true;
     } catch (error) {
       console.error("Erro ao verificar disponibilidade do terapeuta:", error);
+      setMensagem("Erro ao verificar disponibilidade do terapeuta.");
       return false;
     }
   };
 
-  // Função para formatar a data (YYYY-MM-DD → DD/MM/YYYY)
-  const formatarData = (data) => {
-    const [ano, mes, dia] = data.split("-");
-    return `${dia}/${mes}/${ano}`;
-  };
-
-  // Buscar sessões do Firestore apenas do paciente logado
-  const fetchSessoes = async () => {
-    try {
-      const q = query(collection(db, "sessao_terapia"), where("paciente", "==", pacienteNome));
-      const querySnapshot = await getDocs(q);
-      const sessoesList = await Promise.all(
-        querySnapshot.docs.map(async (doc) => {
-          const sessao = doc.data();
-          const nomeTerapeuta = await fetchNomeTerapeuta(sessao.terapeuta);
-          return {
-            id: doc.id,
-            ...sessao,
-            terapeutaNome: nomeTerapeuta,
-            dataSessao: formatarData(sessao.dataSessao),
-          };
-        })
-      );
-      setSessoesMarcadas(sessoesList);
-    } catch (error) {
-      console.error("Erro ao buscar sessões:", error);
-      setMensagem("⚠️ Erro ao carregar as sessões agendadas.");
-    }
-  };
-
-  // Verificar se a sessão já está marcada
   const verificarSessaoExistente = async () => {
     try {
       const q = query(
         collection(db, "sessao_terapia"),
         where("terapeuta", "==", terapeuta),
+        where("paciente", "==", usuarioLogado),
         where("dataSessao", "==", dataSessao),
         where("horario", "==", horario)
       );
@@ -129,51 +93,81 @@ const SessaoTerapia = () => {
       return querySnapshot.size > 0;
     } catch (error) {
       console.error("Erro ao verificar sessão existente:", error);
-      setMensagem("⚠️ Erro ao verificar disponibilidade.");
+      setMensagem("Erro ao verificar disponibilidade.");
     }
     return false;
   };
 
-  // Função para agendar sessão
+  const formatarData = (data) => {
+    const [ano, mes, dia] = data.split("-");
+    return `${dia}/${mes}/${ano}`;
+  };
+
+  const fetchSessoes = async () => {
+    try {
+      const q = query(collection(db, "sessao_terapia"), where("paciente", "==", usuarioLogado));
+      const querySnapshot = await getDocs(q);
+
+      const sessoesList = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const sessao = doc.data();
+          const nomeTerapeuta = await fetchDetalhesTerapeuta(sessao.terapeuta);
+          return {
+            id: doc.id,
+            ...sessao,
+            terapeutaNome: nomeTerapeuta ? nomeTerapeuta.nome : "Terapeuta não encontrado",
+            dataSessao: formatarData(sessao.dataSessao),
+          };
+        })
+      );
+
+      setSessoesMarcadas(sessoesList);
+    } catch (error) {
+      console.error("Erro ao buscar sessões:", error);
+      setMensagem("Erro ao carregar as sessões agendadas.");
+    }
+  };
+
   const handleAgendar = async (e) => {
     e.preventDefault();
 
     if (!dataSessao || !terapeuta || !horario) {
-      setMensagem("⚠️ Preencha todos os campos para agendar sua sessão.");
+      setMensagem("Preencha todos os campos para agendar sua sessão.");
       return;
     }
 
-    // Verificar disponibilidade do terapeuta antes de agendar
-    const disponivel = await verificarDisponibilidadeTerapeuta();
-    if (!disponivel) {
-      setMensagem("⚠️ O terapeuta não está disponível na data ou horário selecionado.");
+    const disponibilidade = await verificarDisponibilidadeTerapeuta();
+    if (!disponibilidade) {
       return;
     }
 
     const sessaoExistente = await verificarSessaoExistente();
     if (sessaoExistente) {
-      setMensagem("⚠️ Já existe uma sessão agendada para este terapeuta no mesmo dia e horário.");
+      setMensagem("Você já tem uma sessão agendada com este terapeuta neste horário.");
       return;
     }
 
     try {
-      // Buscar nome do terapeuta antes de salvar
-      const terapeutaNome = await fetchNomeTerapeuta(terapeuta);
+      const terapeutaDetalhes = await fetchDetalhesTerapeuta(terapeuta);
+      if (!terapeutaDetalhes) {
+        setMensagem("Ocorreu um erro ao buscar informações do terapeuta.");
+        return;
+      }
 
       await addDoc(collection(db, "sessao_terapia"), {
+        paciente: usuarioLogado,
         terapeuta,
-        terapeutaNome,
-        paciente: pacienteNome,
+        terapeutaNome: terapeutaDetalhes.nome,
         dataSessao,
         horario,
         frequencia,
         lembrar,
       });
 
-      setMensagem(`✅ Sessão agendada com ${terapeutaNome} para ${formatarData(dataSessao)} às ${horario}`);
+      setMensagem(`Sessão agendada com ${terapeutaDetalhes.nome} para ${formatarData(dataSessao)} às ${horario}`);
     } catch (error) {
       console.error("Erro ao agendar sessão:", error);
-      setMensagem("⚠️ Ocorreu um erro ao agendar a sessão.");
+      setMensagem("Ocorreu um erro ao agendar a sessão.");
     }
   };
 
@@ -195,10 +189,10 @@ const SessaoTerapia = () => {
           </select>
         </div>
 
-        <div className="form-group">
-          <label>Data da Sessão:</label>
-          <input type="date" onChange={(e) => setDataSessao(e.target.value)} required />
-        </div>
+          <div className="form-group">
+            <label htmlFor="dataSessao">Data da Sessão:</label>
+            <input type="date" onChange={(e) => setDataSessao(e.target.value)} required />
+          </div>
 
         <div className="form-group">
           <label>Horário:</label>
@@ -208,11 +202,11 @@ const SessaoTerapia = () => {
         <button type="submit">Agendar Sessão</button>
       </form>
 
-      <button onClick={fetchSessoes} className="ver-sessoes-btn">Ver Sessões Agendadas</button>
+      <button onClick={fetchSessoes} className="ver-sessoes-btn">Ver Minhas Sessões</button>
 
       {sessoesMarcadas.length > 0 && (
-        <div className="sessoes-list" style={{ marginTop: "15px" }}>
-          <h3>Sessões Agendadas:</h3>
+        <div className="sessoes-list">
+          <h3>Minhas Sessões Agendadas:</h3>
           <ul>
             {sessoesMarcadas.map((sessao) => (
               <li key={sessao.id}>

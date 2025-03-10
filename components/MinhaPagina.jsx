@@ -62,9 +62,9 @@ const MinhaPagina = () => {
           <li><Link to="/jornada-cuidado">Jornada de Cuidado</Link></li>
           <li><Link to="/conteudos-bem-estar">Conteúdos Personalizados</Link></li>
           <li><Link to="/avaliacao-mensal">Avaliação Mensal</Link></li>
-          <li><Link to="/coletiva-mente">Encontros ColetivaMente</Link></li>
+      {/* <li><Link to="/coletiva-mente">Encontros ColetivaMente</Link></li>
           <li><Link to="/audios-bem-estar">Áudios de Bem-estar</Link></li>
-          <li><Link to="/reflexao-humor">Reflexão e Humor</Link></li>
+          <li><Link to="/reflexao-humor">Reflexão e Humor</Link></li> */}
         </ul>
         <button className="logout-btn" onClick={handleLogout}>Sair</button>
       </div>

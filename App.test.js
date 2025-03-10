@@ -1,8 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render, screen, waitFor } from "@testing-library/react";
+import { getFirestore } from 'firebase/firestore';
+import App from "./App";
 
-test('renders learn react link', () => {
+test("Verifica se a aplicação renderiza corretamente", async () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+
+  await waitFor(() => {
+    expect(screen.getByText(/Cadastro/i)).toBeInTheDocument();
+  }, { timeout: 10000 }); 
 });

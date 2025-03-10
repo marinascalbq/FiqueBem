@@ -16,7 +16,7 @@ const Home = () => {
         <div className="card-container">
           <div className="card">
             <img 
-              src="https://via.placeholder.com/100" 
+              src="public/images/planos-cuidado.jpg" 
               alt="Planos de cuidados" 
             />
             <h3>Planos de cuidado personalizados</h3>
@@ -24,7 +24,7 @@ const Home = () => {
           </div>
           <div className="card">
             <img 
-              src="https://via.placeholder.com/100" 
+              src="public/images/recursos-bemestar.jpg" 
               alt="Recursos práticos" 
             />
             <h3>Recursos práticos para o seu bem-estar</h3>
@@ -34,7 +34,7 @@ const Home = () => {
           </div>
           <div className="card">
             <img 
-              src="https://via.placeholder.com/100" 
+              src="public/images/saude-integrada.jpg" 
               alt="Saúde integrada" 
             />
             <h3>Saúde integrada: Corpo e Mente</h3>

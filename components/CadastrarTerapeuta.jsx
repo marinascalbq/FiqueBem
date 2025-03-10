@@ -1,145 +1,152 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import "../styles/SessaoTerapia.css";
 
-const SessaoTerapia = () => {
-  const [dataSessao, setDataSessao] = useState("");
-  const [horario, setHorario] = useState("");
-  const [terapeuta, setTerapeuta] = useState("");
-  const [frequencia, setFrequencia] = useState("semanal");
-  const [lembrar, setLembrar] = useState(false);
-  const [mensagem, setMensagem] = useState("");
-  const [therapists, setTherapists] = useState([]);
-  const [sessoesMarcadas, setSessoesMarcadas] = useState([]);
-  const [loading, setLoading] = useState(true);
+const CadastrarTerapeuta = () => {
+  // Definindo os estados para os campos de dados do terapeuta
+  const [nome, setNome] = useState('');
+  const [especialidade, setEspecialidade] = useState('');
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+  const [horarioInicio, setHorarioInicio] = useState('');
+  const [horarioFim, setHorarioFim] = useState('');
+  const [mensagem, setMensagem] = useState(''); // Estado para as mensagens de retorno
 
-  useEffect(() => {
-    fetchTherapists();
-  }, []);
-
-  // Buscar lista de terapeutas
-  const fetchTherapists = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "therapists"));
-      const therapistsList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setTherapists(therapistsList);
-    } catch (error) {
-      console.error("Erro ao buscar terapeutas:", error);
-      setMensagem("⚠️ Erro ao carregar a lista de terapeutas.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Buscar sessões já marcadas
-  const verificarSessaoExistente = async () => {
+  // Função para verificar se o terapeuta já existe
+  const verificarTerapeutaExistente = async () => {
     try {
       const q = query(
-        collection(db, "sessao_terapia"),
-        where("terapeuta", "==", terapeuta),
-        where("dataSessao", "==", dataSessao),
-        where("horario", "==", horario)
+        collection(db, "therapists"),
+        where("nome", "==", nome),
+        where("especialidade", "==", especialidade)
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.size > 0;
+      return querySnapshot.size > 0; // Se existir algum terapeuta com o mesmo nome e especialidade
     } catch (error) {
-      console.error("Erro ao verificar sessão existente:", error);
-      setMensagem("⚠️ Erro ao verificar disponibilidade.");
+      console.error("Erro ao verificar terapeuta existente:", error);
+      setMensagem("⚠️ Ocorreu um erro ao verificar o terapeuta.");
     }
     return false;
   };
 
-  // Formatar a data no formato DD/MM/YYYY
-  const formatarData = (data) => {
-    const [ano, mes, dia] = data.split("-");
-    return `${dia}/${mes}/${ano}`;
-  };
-
-  // Função para agendar a sessão
-  const handleAgendar = async (e) => {
+  const handleCadastrar = async (e) => {
     e.preventDefault();
 
-    if (!dataSessao || !terapeuta || !horario) {
-      setMensagem("⚠️ Preencha todos os campos para agendar sua sessão.");
+    // Validação simples de campos obrigatórios
+    if (!nome || !especialidade || !dataInicio || !dataFim || !horarioInicio || !horarioFim) {
+      setMensagem('⚠️ Todos os campos são obrigatórios!');
       return;
     }
 
-    // Verifica se a sessão já existe
-    const sessaoExistente = await verificarSessaoExistente();
-    if (sessaoExistente) {
-      setMensagem("⚠️ Já existe uma sessão agendada para este terapeuta no mesmo dia e horário.");
+    // Verifica se o terapeuta já existe
+    const terapeutaExistente = await verificarTerapeutaExistente();
+    if (terapeutaExistente) {
+      setMensagem('⚠️ Já existe um terapeuta com esse nome e especialidade.');
       return;
     }
 
-    // Obter o nome do terapeuta pelo ID
-    const terapeutaSelecionado = therapists.find((t) => t.id === terapeuta);
-    const nomeTerapeuta = terapeutaSelecionado ? terapeutaSelecionado.nome : "Terapeuta desconhecido";
-
+    // Lógica para adicionar os dados no Firestore
     try {
-      await addDoc(collection(db, "sessao_terapia"), {
-        terapeuta,
-        dataSessao,
-        horario,
-        frequencia,
-        lembrar,
+      // Adicionando o novo terapeuta ao Firestore
+      await addDoc(collection(db, "therapists"), {
+        nome,
+        especialidade,
+        dataInicio,
+        dataFim,
+        horarioInicio,
+        horarioFim,
       });
 
-      setMensagem(`✅ Sessão agendada com ${nomeTerapeuta} para ${formatarData(dataSessao)} às ${horario}`);
+      // Sucesso: terapeuta cadastrado
+      setMensagem('✅ Terapeuta cadastrado com sucesso!');
+      
+      // Resetando os campos após o envio
+      setNome('');
+      setEspecialidade('');
+      setDataInicio('');
+      setDataFim('');
+      setHorarioInicio('');
+      setHorarioFim('');
     } catch (error) {
-      console.error("Erro ao agendar sessão:", error);
-      setMensagem("⚠️ Ocorreu um erro ao agendar a sessão.");
+      // Erro ao tentar cadastrar o terapeuta
+      console.error("Erro ao cadastrar terapeuta:", error);
+      setMensagem('⚠️ Ocorreu um erro ao cadastrar o terapeuta. Tente novamente.');
     }
   };
 
   return (
-    <div className="sessao-container" style={{ marginTop: "5px" }}>
-      <h2>Agendar Sessão de Terapia Online</h2>
-      {mensagem && <p className="mensagem">{mensagem}</p>}
-
-      <form onSubmit={handleAgendar}>
+    <div>
+      <h2>Cadastrar Terapeuta</h2>
+      <form onSubmit={handleCadastrar}>
         <div className="form-group">
-          <label>Escolha o Terapeuta:</label>
-          <select onChange={(e) => setTerapeuta(e.target.value)} required>
-            <option value="">Selecione um Terapeuta</option>
-            {therapists.map((therapist) => (
-              <option key={therapist.id} value={therapist.id}>
-                {therapist.nome} - {therapist.especialidade}
-              </option>
-            ))}
-          </select>
+          <label>Nome:</label>
+          <input
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Exemplo: Dra Maria Silva"
+            required
+          />
         </div>
 
         <div className="form-group">
-          <label>Data da Sessão:</label>
-          <input type="date" onChange={(e) => setDataSessao(e.target.value)} required />
+          <label>Especialidade:</label>
+          <input
+            type="text"
+            value={especialidade}
+            onChange={(e) => setEspecialidade(e.target.value)}
+            placeholder="Exemplo: Psicologia Clinica"
+            required
+          />
         </div>
 
         <div className="form-group">
-          <label>Horário:</label>
-          <input type="time" onChange={(e) => setHorario(e.target.value)} required />
+          <label>Data de disponíveis de:</label>
+          <input
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+            required
+          />
         </div>
 
         <div className="form-group">
-          <label>Frequência:</label>
-          <select onChange={(e) => setFrequencia(e.target.value)} value={frequencia}>
-            <option value="semanal">Semanal</option>
-            <option value="mensal">Mensal</option>
-          </select>
+          <label>até:</label>
+          <input
+            type="date"
+            value={dataFim}
+            onChange={(e) => setDataFim(e.target.value)}
+            required
+          />
         </div>
 
         <div className="form-group">
-          <label>Lembrar:</label>
-          <input type="checkbox" onChange={(e) => setLembrar(e.target.checked)} />
+          <label>Horário de Início:</label>
+          <input
+            type="time"
+            value={horarioInicio}
+            onChange={(e) => setHorarioInicio(e.target.value)}
+            required
+          />
         </div>
 
-        <button type="submit">Agendar Sessão</button>
+        <div className="form-group">
+          <label>Horário de Fim:</label>
+          <input
+            type="time"
+            value={horarioFim}
+            onChange={(e) => setHorarioFim(e.target.value)}
+            required
+          />
+        </div>
+
+        <button type="submit">Cadastrar Terapeuta</button>
       </form>
+
+      {mensagem && <p className="mensagem">{mensagem}</p>}
     </div>
   );
 };
 
-export default SessaoTerapia;
+export default CadastrarTerapeuta;

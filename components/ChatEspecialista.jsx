@@ -5,7 +5,15 @@ const ChatEspecialista = () => {
   const [historicoChat, setHistoricoChat] = useState([]);
 
   const handleEnviarMensagem = () => {
-    setHistoricoChat([...historicoChat, { usuario: mensagem }]);
+    if (!mensagem.trim()) return; // Evita mensagens vazias
+
+    const novaConversa = [
+      ...historicoChat,
+      { usuario: mensagem },  
+      { especialista: "Recebemos sua mensagem! Um especialista responderá em breve." } 
+    ];
+
+    setHistoricoChat(novaConversa);
     setMensagem("");
   };
 
@@ -15,7 +23,8 @@ const ChatEspecialista = () => {
       <div>
         {historicoChat.map((item, index) => (
           <div key={index}>
-            <strong>Usuário:</strong> {item.usuario}
+            {item.usuario && <strong>Usuário:</strong>} {item.usuario}
+            {item.especialista && <p><strong>Especialista:</strong> {item.especialista}</p>}
           </div>
         ))}
       </div>
